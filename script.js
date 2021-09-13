@@ -6,9 +6,20 @@ const board = document.querySelector('#board');
 const log = document.querySelector('#log');
 const currentBoard = [];
 const calc = [];
+const values = [
+  [100, -40, 20, 5, 5, 20, -40, 100],
+  [-40, -80, -1, -1, -1, -1, -80, -40],
+  [20, -1, 5, 1, 1, 5, -1, 20],
+  [5, -1, 1, 0, 0, 1, -1, 5],
+  [5, -1, 1, 0, 0, 1, -1, 5],
+  [20, -1, 5, 1, 1, 5, -1, 20],
+  [-40, -80, -1, -1, -1, -1, -80, -40],
+  [100, -40, 20, 5, 5, 20, -40, 100]
+];
 
 automode.addEventListener('change', onChange, false);
 npcmode.addEventListener('change', onChange, false);
+interval.addEventListener('change', onChange, false);
 
 function onChange (event) {
   switch (this) {
@@ -39,7 +50,9 @@ function main () {
     for (let column = 0; column < 8; column ++) {
       const {cell, div} = createCell(row, column);
       board.appendChild(div);
-      currentBoard[row][column] = {cell, status: null};
+      cell.status = null;
+      cell.point = values[row][column];
+      currentBoard[row][column] = cell;
     }
   }
   currentBoard[3][3].status = true;
@@ -47,7 +60,7 @@ function main () {
   currentBoard[4][3].status = false;
   currentBoard[4][4].status = true;
   turn = true;
-  currentBoard.flat().flat().filter(({status}) => status !== null).forEach(({cell, status}) => cell.className = `cell ${status ? 'black' : 'white'}`);
+  currentBoard.flat().flat().filter(({status}) => status !== null).forEach(cell => cell.className = `cell ${cell.status ? 'black' : 'white'}`);
 }
 
 function createCell (rowIndex, columnIndex) {
@@ -66,8 +79,8 @@ function createCell (rowIndex, columnIndex) {
 
 function onClick (event) {
   const {rowIndex, columnIndex} = this;
-  const element = currentBoard[rowIndex][columnIndex];
-  if (element.status !== null) return;
+  const cell = currentBoard[rowIndex][columnIndex];
+  if (cell.status !== null) return;
 
   const cells = [];
   for (let x = -1; x <= 1; x ++) {
@@ -78,11 +91,11 @@ function onClick (event) {
   }
   if (cells.length === 0) return;
 
-  cells.push(element);
+  cells.push(cell);
 
   cells.forEach(cell => {
     cell.status = cell.status === null ? turn : !cell.status;
-    cell.cell.className = `cell ${turn ? 'black' : 'white'}`;
+    cell.className = `cell ${turn ? 'black' : 'white'}`;
   });
   calc.push([rowIndex, columnIndex]);
 
@@ -110,7 +123,7 @@ function getCount (row, column, dx, dy) {
 
     if (row < 0 || row > 7 || column < 0 || column > 7) break;
 
-    cell= currentBoard[row][column];
+    cell = currentBoard[row][column];
     switch (cell.status) {
       case null:
         break loop;
@@ -146,16 +159,13 @@ async function autoPlay () {
   await sleep(milliseconds);
 
   let valid = getValidCells();
-  let cell = valid.cell;
-  let count = valid.count;
   if (valid.length === 0) {
+console.log(valid);
     printLog(`${turn ? '黒' : '白'}の置けるセルがありません。
 ${turn ? '白' : '黒'}にターンを渡します。`);
     turn = !turn;
     if (!auto) return;
     valid = getValidCells();
-    cell = valid.cell;
-    count = valid.count;
 
     if (valid.length === 0) {
       printLog(`置けるセルがありません。
@@ -163,23 +173,27 @@ ${turn ? '白' : '黒'}にターンを渡します。`);
       return finish();
     }
   }
+  // 最大評価値が得られる挙動
+  valid.sort((a, b) => b.point - a.point)[0].cell.click();
   // 最大数が得られる挙動
-  valid.sort((a, b) => b.count - a.count)[0].cell.cell.click();
+  //valid.sort((a, b) => b.count - a.count)[0].cell.cell.click();
   // 最小数が得られる挙動
   // valid.sort((a, b) => a.count - b.count)[0].cell.cell.click();
 }
 
 function getValidCells () {
   const cells = [];
+  let point;
   currentBoard.flat().flat().forEach((cell, index) => {
-    let count = 0;
+    const temp = [];
     for (let x = -1; x <= 1; x ++) {
       for (let y = -1; y <= 1; y ++) {
         if (x === 0 && y === 0) continue;
-        count += getCount(~~(index / 8), index % 8, x, y).length;
+        temp.push(...getCount(~~(index / 8), index % 8, x, y));
       }
     }
-    if (count > 0) cells.push({count, cell});
+    point = cell.point + temp.reduce((accumulator, {point}) => accumulator + point, 0);
+    if (temp.length > 0) cells.push({point, cell});
   });
 
   return cells.filter(({cell: {status}}) => status === null);
