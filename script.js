@@ -1,8 +1,9 @@
 'use strict';
-const board = document.querySelector('#board');
 const automode = document.querySelector('#automode');
 const npcmode = document.querySelector('#npcmode');
 const interval = document.querySelector('#interval');
+const board = document.querySelector('#board');
+const log = document.querySelector('#log');
 const currentBoard = [];
 const calc = [];
 
@@ -16,6 +17,7 @@ function onChange (event) {
     case pvpmode:
       auto = this === automode;
       npc = this === npcmode;
+      if (auto) autoPlay();
       break;
     case interval:
       milliseconds = parseInt(interval.value);
@@ -85,14 +87,17 @@ function onClick (event) {
   calc.push([rowIndex, columnIndex]);
 
   if (currentBoard.flat().filter(({status}) => status === null).length === 0) {
-    console.log('全てのセルが埋まりました。');
+    printLog('全てのセルが埋まりました。');
     return finish();
   }
 
   turn = !turn;
   if (auto) autoPlay();
   else if (npc && !turn) autoPlay();
-  else if (getValidCells().length === 0) turn = !turn;
+  else if (npc && turn && getValidCells().length === 0) {
+    turn = !turn;
+    autoPlay();
+  } else if (getValidCells().length === 0) turn = !turn;
 }
 
 function getCount (row, column, dx, dy) {
@@ -123,10 +128,16 @@ function getCount (row, column, dx, dy) {
   return flag ? cells : [];
 }
 
+function printLog (message) {
+  const li = document.createElement('li');
+  li.innerHTML = message.replace('\n', '<br />');
+  log.appendChild(li);
+}
+
 function finish () {
   const white = currentBoard.flat().filter(({status}) => !status).length;
   const black = currentBoard.flat().filter(({status}) => status).length;
-  console.log(`黒: ${black}
+  printLog(`黒: ${black}
 白: ${white}`);
 }
 
@@ -138,7 +149,7 @@ async function autoPlay () {
   let cell = valid.cell;
   let count = valid.count;
   if (valid.length === 0) {
-    console.log(`${turn ? '黒' : '白'}の置けるセルがありません。
+    printLog(`${turn ? '黒' : '白'}の置けるセルがありません。
 ${turn ? '白' : '黒'}にターンを渡します。`);
     turn = !turn;
     if (!auto) return;
@@ -147,15 +158,15 @@ ${turn ? '白' : '黒'}にターンを渡します。`);
     count = valid.count;
 
     if (valid.length === 0) {
-      console.log(`置けるセルがありません。
+      printLog(`置けるセルがありません。
 ゲームを終了します。`);
       return finish();
     }
   }
   // 最大数が得られる挙動
-  // valid.sort((a, b) => b.count - a.count)[0].cell.cell.click();
+  valid.sort((a, b) => b.count - a.count)[0].cell.cell.click();
   // 最小数が得られる挙動
-  valid.sort((a, b) => a.count - b.count)[0].cell.cell.click();
+  // valid.sort((a, b) => a.count - b.count)[0].cell.cell.click();
 }
 
 function getValidCells () {
