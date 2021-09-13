@@ -72,11 +72,11 @@ function createCell (rowIndex, columnIndex) {
   div.style.gridRow = rowIndex + 1;
   div.style.gridColumn = columnIndex + 1;
   div.className = 'item';
-  div.rowIndex = rowIndex;
-  div.columnIndex = columnIndex;
-  div.addEventListener('click', onClick, false);
   const cell = document.createElement('div');
   cell.className = 'cell';
+  cell.rowIndex = rowIndex;
+  cell.columnIndex = columnIndex;
+  cell.addEventListener('click', onClick, false);
   div.appendChild(cell);
   return {cell, div};
 }
