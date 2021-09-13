@@ -95,11 +95,12 @@ function onClick (event) {
 
   cells.push(cell);
 
+  currentBoard.flat().flat().forEach(cell => cell.textContent = points[cell.rowIndex][cell.columnIndex]);
   cells.forEach(cell => {
     cell.className = `cell ${turn ? 'black' : 'white'}`;
     cell.status = cell.status === null ? turn : !cell.status;
+    cell.textContent = cell.point;
   });
-  currentBoard.flat().flat().forEach(cell => cell.textContent = points[cell.rowIndex][cell.columnIndex]);
   calc.push([rowIndex, columnIndex]);
 
   if (currentBoard.flat().filter(({status}) => status === null).length === 0) {
