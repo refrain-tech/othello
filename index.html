@@ -5,7 +5,32 @@
     <link href="style.css" rel="stylesheet" />
   </head>
   <body>
-    <button onclick="location.reload();">RESET</button>
+    <div>
+      <table border="1">
+        <thead></thead>
+        <tbody>
+          <tr>
+            <td>PlayMode</td>
+            <td><input id="automode" name="playmode" type="radio" value="auto" />
+              <label for="auto">Auto</label>
+              <input id="npcmode" name="playmode" type="radio" value="npc" />
+              <label for="npc">NPC</label>
+              <input id="pvpmode" name="playmode" type="radio" value="pvp" />
+              <label for="pvp">PvP</label></td>
+          </tr>
+          <tr>
+            <td>Interval</td>
+            <td><input id="interval" min="1" name="interval" type="number" value="100" /></td>
+          </tr>
+          <tr>
+            <td>RESET</td>
+            <td><button onclick="location.reload();">RESET</button></td>
+          </tr>
+        </tbody>
+        <tfoot></tfoot>
+      </table>
+      </div>
+    </div>
     <div id="board"></div>
     <script src="script.js"></script>
   </body>

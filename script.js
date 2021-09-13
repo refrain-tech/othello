@@ -1,13 +1,34 @@
 'use strict';
 const board = document.querySelector('#board');
+const automode = document.querySelector('#automode');
+const npcmode = document.querySelector('#npcmode');
+const interval = document.querySelector('#interval');
 const currentBoard = [];
 const calc = [];
+
+automode.addEventListener('change', onChange, false);
+npcmode.addEventListener('change', onChange, false);
+
+function onChange (event) {
+  switch (this) {
+    case automode:
+    case npcmode:
+    case pvpmode:
+      auto = this === automode;
+      npc = this === npcmode;
+      break;
+    case interval:
+      milliseconds = parseInt(interval.value);
+      break;
+  }
+}
 
 const sleep = async (milliseconds) => new Promise(resolve => setTimeout(() => resolve(), milliseconds));
 
 let turn = null;
-let interval = 1;
-let auto = true;
+let milliseconds = 1;
+let auto = false;
+let npc = false;
 
 function main () {
   currentBoard.length = 0;
@@ -70,6 +91,7 @@ function onClick (event) {
 
   turn = !turn;
   if (auto) autoPlay();
+  else if (npc && !turn) autoPlay();
   else if (getValidCells().length === 0) turn = !turn;
 }
 
@@ -110,7 +132,7 @@ function finish () {
 
 async function autoPlay () {
   // Maximum call stack size exceeded対策
-  await sleep(interval);
+  await sleep(milliseconds);
 
   let valid = getValidCells();
   let cell = valid.cell;
@@ -119,6 +141,7 @@ async function autoPlay () {
     console.log(`${turn ? '黒' : '白'}の置けるセルがありません。
 ${turn ? '白' : '黒'}にターンを渡します。`);
     turn = !turn;
+    if (!auto) return;
     valid = getValidCells();
     cell = valid.cell;
     count = valid.count;
@@ -129,7 +152,10 @@ ${turn ? '白' : '黒'}にターンを渡します。`);
       return finish();
     }
   }
-  valid.sort((a, b) => b.count - a.count)[0].cell.cell.click();
+  // 最大数が得られる挙動
+  // valid.sort((a, b) => b.count - a.count)[0].cell.cell.click();
+  // 最小数が得られる挙動
+  valid.sort((a, b) => a.count - b.count)[0].cell.cell.click();
 }
 
 function getValidCells () {
