@@ -1,0 +1,26 @@
+@charset "utf-8";
+html {
+  font: 20px serif;
+}
+#board {
+  background: black;
+  display: inline-grid;
+  grid-gap: 0.1rem;
+  grid-template-columns: repeat(8, 5rem);
+  grid-template-rows: repeat(8, 5rem);
+}
+.item {
+  background: green;
+  padding: 0.5rem;
+}
+.cell {
+  border-radius: 50%;
+  height: 100%;
+  width: 100%;
+}
+.black {
+  background: black;
+}
+.white {
+  background: white;
+}
