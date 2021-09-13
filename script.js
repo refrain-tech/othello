@@ -6,7 +6,7 @@ const board = document.querySelector('#board');
 const log = document.querySelector('#log');
 const currentBoard = [];
 const calc = [];
-const values = [
+const points = [
   [100, -40, 20, 5, 5, 20, -40, 100],
   [-40, -80, -1, -1, -1, -1, -80, -40],
   [20, -1, 5, 1, 1, 5, -1, 20],
@@ -52,7 +52,7 @@ function main () {
       const {cell, div} = createCell(row, column);
       board.appendChild(div);
       cell.status = null;
-      cell.point = values[row][column];
+      cell.point = points[row][column];
       currentBoard[row][column] = cell;
     }
   }
@@ -61,10 +61,8 @@ function main () {
   currentBoard[4][3].status = false;
   currentBoard[4][4].status = true;
   turn = true;
-  currentBoard.flat().flat().filter(({status}) => status !== null).forEach(cell => {
-    cell.className = `cell ${cell.status ? 'black' : 'white'}`;
-    cell.textContent = values[cell.rowIndex][cell.columnIndex];
-  });
+  currentBoard.flat().flat().filter(({status}) => status !== null).forEach(cell => cell.className = `cell ${cell.status ? 'black' : 'white'}`);
+  currentBoard.flat().flat().forEach(cell => cell.textContent = points[cell.rowIndex][cell.columnIndex]);
 }
 
 function createCell (rowIndex, columnIndex) {
@@ -100,8 +98,8 @@ function onClick (event) {
   cells.forEach(cell => {
     cell.className = `cell ${turn ? 'black' : 'white'}`;
     cell.status = cell.status === null ? turn : !cell.status;
-    cell.textContent = values[cell.rowIndex][cell.columnIndex];
   });
+  currentBoard.flat().flat().forEach(cell => cell.textContent = points[cell.rowIndex][cell.columnIndex]);
   calc.push([rowIndex, columnIndex]);
 
   if (currentBoard.flat().filter(({status}) => status === null).length === 0) {
