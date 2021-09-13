@@ -6,6 +6,7 @@ const calc = [];
 const sleep = async (milliseconds) => new Promise(resolve => setTimeout(() => resolve(), milliseconds));
 
 let turn = null;
+let interval = 1;
 let auto = true;
 
 function main () {
@@ -23,10 +24,7 @@ function main () {
   currentBoard[4][3].status = false;
   currentBoard[4][4].status = true;
   turn = true;
-  currentBoard.flat()
-              .flat()
-              .filter(({status}) => status !== null)
-              .forEach(({cell, status}) => cell.className = `cell ${status ? 'black' : 'white'}`);
+  currentBoard.flat().flat().filter(({status}) => status !== null).forEach(({cell, status}) => cell.className = `cell ${status ? 'black' : 'white'}`);
 }
 
 function createCell (rowIndex, columnIndex) {
@@ -112,38 +110,42 @@ function finish () {
 
 async function autoPlay () {
   // Maximum call stack size exceeded対策
-  await sleep(1);
+  await sleep(interval);
 
-  let cells = getValidCells();
-  if (cells.length === 0) {
+  let valid = getValidCells();
+  let cell = valid.cell;
+  let count = valid.count;
+  if (valid.length === 0) {
     console.log(`${turn ? '黒' : '白'}の置けるセルがありません。
 ${turn ? '白' : '黒'}にターンを渡します。`);
     turn = !turn;
-    cells = getValidCells();
+    valid = getValidCells();
+    cell = valid.cell;
+    count = valid.count;
 
-    if (cells.length === 0) {
+    if (valid.length === 0) {
       console.log(`置けるセルがありません。
 ゲームを終了します。`);
       return finish();
     }
   }
-
-  cells[~~(Math.random() * cells.length)].cell.click();
+  valid.sort((a, b) => b.count - a.count)[0].cell.cell.click();
 }
 
 function getValidCells () {
   const cells = [];
-  currentBoard.flat()
-              .flat()
-              .forEach((cell, index) => {
+  currentBoard.flat().flat().forEach((cell, index) => {
+    let count = 0;
     for (let x = -1; x <= 1; x ++) {
       for (let y = -1; y <= 1; y ++) {
         if (x === 0 && y === 0) continue;
-        if (getCount(~~(index / 8), index % 8, x, y).length !== 0) cells.push(cell);
+        count += getCount(~~(index / 8), index % 8, x, y).length;
       }
     }
+    if (count > 0) cells.push({count, cell});
   });
-  return cells.filter(({status}) => status === null);
+
+  return cells.filter(({cell: {status}}) => status === null);
 }
 
 main();
