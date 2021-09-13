@@ -15,14 +15,20 @@ html {
 }
 .cell {
   border-radius: 50%;
+  font-size: 3rem;
+  dispay: flex;
+  align-items: center;
+  justify-content: center;
   height: 100%;
   width: 100%;
 }
 .black {
   background: black;
+  color: white;
 }
 .white {
   background: white;
+  color: black;
 }
 #log {
   list-style: none;
