@@ -21,6 +21,14 @@ automode.addEventListener('change', onChange, false);
 npcmode.addEventListener('change', onChange, false);
 interval.addEventListener('change', onChange, false);
 
+const sleep = async (milliseconds) => new Promise(resolve => setTimeout(() => resolve(), milliseconds));
+
+let turn = null;
+let milliseconds = 1;
+let auto = false;
+let npc = false;
+let debug = true;
+
 function onChange (event) {
   switch (this) {
     case automode:
@@ -35,13 +43,6 @@ function onChange (event) {
       break;
   }
 }
-
-const sleep = async (milliseconds) => new Promise(resolve => setTimeout(() => resolve(), milliseconds));
-
-let turn = null;
-let milliseconds = 1;
-let auto = false;
-let npc = false;
 
 function main () {
   currentBoard.length = 0;
@@ -60,7 +61,10 @@ function main () {
   currentBoard[4][3].status = false;
   currentBoard[4][4].status = true;
   turn = true;
-  currentBoard.flat().flat().filter(({status}) => status !== null).forEach(cell => cell.className = `cell ${cell.status ? 'black' : 'white'}`);
+  currentBoard.flat().flat().filter(({status}) => status !== null).forEach(cell => {
+    cell.className = `cell ${cell.status ? 'black' : 'white'}`;
+    cell.textContent = values[cell.rowIndex][cell.columnIndex];
+  });
 }
 
 function createCell (rowIndex, columnIndex) {
@@ -94,8 +98,9 @@ function onClick (event) {
   cells.push(cell);
 
   cells.forEach(cell => {
-    cell.status = cell.status === null ? turn : !cell.status;
     cell.className = `cell ${turn ? 'black' : 'white'}`;
+    cell.status = cell.status === null ? turn : !cell.status;
+    cell.textContent = values[cell.rowIndex][cell.columnIndex];
   });
   calc.push([rowIndex, columnIndex]);
 
