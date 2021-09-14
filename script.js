@@ -99,8 +99,8 @@ function onClick (event) {
   cells.forEach(cell => {
     cell.className = `cell ${turn ? 'black' : 'white'}`;
     cell.status = cell.status === null ? turn : !cell.status;
-    cell.textContent = cell.point;
   });
+  getValidCells().forEach(cell => cell.textContent = cell.point);
   calc.push([rowIndex, columnIndex]);
 
   if (currentBoard.flat().filter(({status}) => status === null).length === 0) {
@@ -164,7 +164,6 @@ async function autoPlay () {
 
   let valid = getValidCells();
   if (valid.length === 0) {
-console.log(valid);
     printLog(`${turn ? '黒' : '白'}の置けるセルがありません。
 ${turn ? '白' : '黒'}にターンを渡します。`);
     turn = !turn;
