@@ -1,5 +1,4 @@
 'use strict';
-import firebase from 'https://www.gstatic.com/firebasejs/9.0.2/firebase-app.js';
 
 firebase.initializeApp({
   apiKey: "AIzaSyDv3aFlRfzXM8MoWCZRiM8p4JXBhN0Xpew",
