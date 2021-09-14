@@ -124,7 +124,7 @@ function onClick (event) {
   else if (npc) {
     // 自分のターンであり、取れるセルが0個の場合は相手にターンを渡す
     if (turn && getValidCells().length === 0) turn = !turn;
-    autoPlay();
+    if (!turn) autoPlay();
   } else if (getValidCells().length === 0) turn = !turn;
 }
 
