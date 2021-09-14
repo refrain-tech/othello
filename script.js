@@ -1,4 +1,5 @@
 'use strict';
+
 const automode = document.querySelector('#automode');
 const npcmode = document.querySelector('#npcmode');
 const interval = document.querySelector('#interval');
