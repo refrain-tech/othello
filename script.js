@@ -100,7 +100,7 @@ function onClick (event) {
     cell.className = `cell ${turn ? 'black' : 'white'}`;
     cell.status = cell.status === null ? turn : !cell.status;
   });
-  getValidCells().forEach(cell => cell.textContent = cell.point);
+  getValidCells().forEach(({cell, point}) => cell.textContent = point);
   calc.push([rowIndex, columnIndex]);
 
   if (currentBoard.flat().filter(({status}) => status === null).length === 0) {
