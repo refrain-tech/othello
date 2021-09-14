@@ -5,7 +5,7 @@ const interval = document.querySelector('#interval');
 const board = document.querySelector('#board');
 const log = document.querySelector('#log');
 const currentBoard = [];
-const calc = [];
+const pattern = [];
 const points = [
   [100, -40, 20, 5, 5, 20, -40, 100],
   [-40, -80, -1, -1, -1, -1, -80, -40],
@@ -27,7 +27,7 @@ let turn = null;
 let milliseconds = 1;
 let auto = false;
 let npc = false;
-let debug = true;
+let debug = false;
 
 function onChange (event) {
   switch (this) {
@@ -45,6 +45,15 @@ function onChange (event) {
 }
 
 function main () {
+  if (!confirm('このゲームでは、ゲームの終了時に以下の情報をサーバーへアップロードします。\n' +
+               '・どちらのプレイヤーが勝利したか、又は引き分けになったか\n' +
+               '・ゲーム終了時点での、各プレイヤーのセルの数\n' +
+               '・セルがどの順序で配置されたかの履歴\n' +
+               '情報のアップロードに同意する場合は「OK」を選択してください。')) {
+    return confirm('情報のアップロードが許可されませんでした。\n' +
+                   '初期化処理は実行されず、ゲームは動作しません。\n' +
+                   '選択しなおしますか？') ? main() : alert('選択しなおす場合は、ページを再読み込みしてください。');
+  }
   currentBoard.length = 0;
   for (let row = 0; row < 8; row ++) {
     currentBoard[row] = [];
@@ -62,7 +71,7 @@ function main () {
   currentBoard[4][4].status = true;
   turn = true;
   currentBoard.flat().flat().filter(({status}) => status !== null).forEach(cell => cell.className = `cell ${cell.status ? 'black' : 'white'}`);
-  currentBoard.flat().flat().forEach(cell => cell.textContent = points[cell.rowIndex][cell.columnIndex]);
+  if (debug) currentBoard.flat().flat().forEach(cell => cell.textContent = points[cell.rowIndex][cell.columnIndex]);
 }
 
 function createCell (rowIndex, columnIndex) {
@@ -95,13 +104,15 @@ function onClick (event) {
 
   cells.push(cell);
 
-  currentBoard.flat().flat().forEach(cell => cell.textContent = points[cell.rowIndex][cell.columnIndex]);
   cells.forEach(cell => {
     cell.className = `cell ${turn ? 'black' : 'white'}`;
     cell.status = cell.status === null ? turn : !cell.status;
   });
-  getValidCells().forEach(({cell, point}) => cell.textContent = point);
-  calc.push([rowIndex, columnIndex]);
+  if (debug) {
+    currentBoard.flat().flat().forEach(cell => cell.textContent = points[cell.rowIndex][cell.columnIndex]);
+    getValidCells().forEach(({cell, point}) => cell.textContent = point);
+  }
+  pattern.push([rowIndex, columnIndex]);
 
   if (currentBoard.flat().filter(({status}) => status === null).length === 0) {
     printLog('全てのセルが埋まりました。');
@@ -110,9 +121,9 @@ function onClick (event) {
 
   turn = !turn;
   if (auto) autoPlay();
-  else if (npc && !turn) autoPlay();
-  else if (npc && turn && getValidCells().length === 0) {
-    turn = !turn;
+  else if (npc) {
+    // 自分のターンであり、取れるセルが0個の場合は相手にターンを渡す
+    if (turn && getValidCells().length === 0) turn = !turn;
     autoPlay();
   } else if (getValidCells().length === 0) turn = !turn;
 }
@@ -156,6 +167,21 @@ function finish () {
   const black = currentBoard.flat().filter(({status}) => status).length;
   printLog(`黒: ${black}
 白: ${white}`);
+  // Auto Modeでは得られるデータは固定なのでアップロードしない
+  if (auto) return;
+  const ref = database.ref('othello-logger');
+  ref.push({
+    pattern,
+    result: {
+      black,
+      white
+    },
+    winner: black === white ? 'draw' : black > white ? 'black' : 'white'
+  }).then(() => {
+    console.log('ログを送信しました。');
+  }).catch(() => {
+    console.log('ログの送信に失敗しました。');
+  });;
 }
 
 async function autoPlay () {
