@@ -1,18 +1,18 @@
 'use strict';
 
 /** import firebase libs */
-import {initializeApp} from "https://www.gstatic.com/firebasejs/9.0.2/firebase-app.js";
-import {getDatabase} from "https://www.gstatic.com/firebasejs/9.0.2/firebase-database.js";
+import {initializeApp} from 'https://www.gstatic.com/firebasejs/9.0.2/firebase-app.js';
+import {getDatabase} from 'https://www.gstatic.com/firebasejs/9.0.2/firebase-database.js';
 
 /** initialize firebase app */
 initializeApp({
-  apiKey: "AIzaSyDv3aFlRfzXM8MoWCZRiM8p4JXBhN0Xpew",
-  appId: "1:792962102421:web:e1fb2833c42a59914bd79c",
-  authDomain: "othello-logger.firebaseapp.com",
-  databaseURL: "https://othello-logger-default-rtdb.firebaseio.com",
-  messagingSenderId: "792962102421",
-  projectId: "othello-logger",
-  storageBucket: "othello-logger.appspot.com"
+  apiKey: 'AIzaSyDv3aFlRfzXM8MoWCZRiM8p4JXBhN0Xpew',
+  appId: '1:792962102421:web:e1fb2833c42a59914bd79c',
+  authDomain: 'othello-logger.firebaseapp.com',
+  databaseURL: 'https://othello-logger-default-rtdb.firebaseio.com',
+  messagingSenderId: '792962102421',
+  projectId: 'othello-logger',
+  storageBucket: 'othello-logger.appspot.com'
 });
 
 /** get realtime database instance */
