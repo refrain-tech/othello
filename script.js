@@ -128,9 +128,12 @@ function onClick (event) {
 
   turn = !turn;
   
-  if (auto || (npc && !turn)) autoPlay();
   // 自分のターンであり、取れるセルが0個の場合は相手にターンを渡す
-  else if (getValidCells().length === 0) turn = !turn;
+  if (auto || (npc && !turn)) autoPlay();
+  else if (getValidCells().length === 0) {
+    turn = !turn;
+    if (!turn) autoPlay();
+  }
 }
 
 function onChange (event) {
