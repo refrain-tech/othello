@@ -1,10 +1,31 @@
 'use strict';
 
+/** import firebase libs */
+import {initializeApp} from "https://www.gstatic.com/firebasejs/9.0.2/firebase-app.js";
+import {getDatabase} from "https://www.gstatic.com/firebasejs/9.0.2/firebase-database.js";
+
+/** initialize firebase app */
+initializeApp({
+  apiKey: "AIzaSyDv3aFlRfzXM8MoWCZRiM8p4JXBhN0Xpew",
+  appId: "1:792962102421:web:e1fb2833c42a59914bd79c",
+  authDomain: "othello-logger.firebaseapp.com",
+  databaseURL: "https://othello-logger-default-rtdb.firebaseio.com",
+  messagingSenderId: "792962102421",
+  projectId: "othello-logger",
+  storageBucket: "othello-logger.appspot.com"
+});
+
+/** get realtime database instance */
+const database = getDatabase();
+
+/** get html element */
 const automode = document.querySelector('#automode');
 const npcmode = document.querySelector('#npcmode');
 const interval = document.querySelector('#interval');
 const board = document.querySelector('#board');
 const log = document.querySelector('#log');
+
+/** some data */
 const currentBoard = [];
 const pattern = [];
 const points = [
@@ -17,34 +38,16 @@ const points = [
   [-40, -80, -1, -1, -1, -1, -80, -40],
   [100, -40, 20, 5, 5, 20, -40, 100]
 ];
-
-automode.addEventListener('change', onChange, false);
-npcmode.addEventListener('change', onChange, false);
-interval.addEventListener('change', onChange, false);
-
-const sleep = async (milliseconds) => new Promise(resolve => setTimeout(() => resolve(), milliseconds));
-
 let turn = null;
-let milliseconds = 1;
+let milliseconds = 100;
 let auto = false;
 let npc = false;
 let debug = false;
 
-function onChange (event) {
-  switch (this) {
-    case automode:
-    case npcmode:
-    case pvpmode:
-      auto = this === automode;
-      npc = this === npcmode;
-      if (auto) autoPlay();
-      break;
-    case interval:
-      milliseconds = parseInt(interval.value);
-      break;
-  }
-}
+/** wait specified milliseconds */
+const sleep = milliseconds => new Promise(resolve => setTimeout(() => resolve(), milliseconds));
 
+/** main function */
 function main () {
   if (!confirm('このゲームでは、ゲームの終了時に以下の情報をサーバーへアップロードします。\n' +
                '・どちらのプレイヤーが勝利したか、又は引き分けになったか\n' +
@@ -71,10 +74,14 @@ function main () {
   currentBoard[4][3].status = false;
   currentBoard[4][4].status = true;
   turn = true;
+  automode.addEventListener('change', onChange, false);
+  npcmode.addEventListener('change', onChange, false);
+  interval.addEventListener('change', onChange, false);
   currentBoard.flat().flat().filter(({status}) => status !== null).forEach(cell => cell.className = `cell ${cell.status ? 'black' : 'white'}`);
   if (debug) currentBoard.flat().flat().forEach(cell => cell.textContent = points[cell.rowIndex][cell.columnIndex]);
 }
 
+/** create cell element */
 function createCell (rowIndex, columnIndex) {
   const div = document.createElement('div');
   div.style.gridRow = rowIndex + 1;
@@ -89,6 +96,7 @@ function createCell (rowIndex, columnIndex) {
   return {cell, div};
 }
 
+/** click event handler */
 function onClick (event) {
   const {rowIndex, columnIndex} = this;
   const cell = currentBoard[rowIndex][columnIndex];
@@ -129,6 +137,23 @@ function onClick (event) {
   } else if (getValidCells().length === 0) turn = !turn;
 }
 
+/** change event handler */
+function onChange (event) {
+  switch (this) {
+    case automode:
+    case npcmode:
+    case pvpmode:
+      auto = this === automode;
+      npc = this === npcmode;
+      if (auto) autoPlay();
+      break;
+    case interval:
+      milliseconds = parseInt(interval.value);
+      break;
+  }
+}
+
+/** get obtainable cells */
 function getCount (row, column, dx, dy) {
   let flag = false, cell;
   const cells = [];
@@ -157,12 +182,14 @@ function getCount (row, column, dx, dy) {
   return flag ? cells : [];
 }
 
+/** print log message to document */
 function printLog (message) {
   const li = document.createElement('li');
   li.innerHTML = message.replace('\n', '<br />');
   log.appendChild(li);
 }
 
+/** called when finish */
 function finish () {
   const white = currentBoard.flat().filter(({status}) => !status).length;
   const black = currentBoard.flat().filter(({status}) => status).length;
@@ -185,6 +212,7 @@ function finish () {
   });;
 }
 
+/** auto play */
 async function autoPlay () {
   // Maximum call stack size exceeded対策
   await sleep(milliseconds);
@@ -203,14 +231,10 @@ ${turn ? '白' : '黒'}にターンを渡します。`);
       return finish();
     }
   }
-  // 最大評価値が得られる挙動
   valid.sort((a, b) => b.point - a.point)[0].cell.click();
-  // 最大数が得られる挙動
-  //valid.sort((a, b) => b.count - a.count)[0].cell.cell.click();
-  // 最小数が得られる挙動
-  // valid.sort((a, b) => a.count - b.count)[0].cell.cell.click();
 }
 
+/** get obtainable point of cell */
 function getValidCells () {
   const cells = [];
   let point;
@@ -229,4 +253,5 @@ function getValidCells () {
   return cells.filter(({cell: {status}}) => status === null);
 }
 
+/** start */
 main();
