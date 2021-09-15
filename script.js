@@ -233,7 +233,7 @@ ${turn ? '白' : '黒'}にターンを渡します。`);
     }
   }
   // プレイヤーAまたはBの置けるセルの中で、最も得点の得られるセルをクリックする
-  valid.sort((a, b) => b.point - a.point)[0].cell.click();
+  validCells.sort((a, b) => b.point - a.point)[0].cell.click();
 }
 
 function getValidCells () {
