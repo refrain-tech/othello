@@ -132,7 +132,11 @@ function onClick (event) {
   if (auto || (npc && !turn)) autoPlay();
   else if (getValidCells().length === 0) {
     turn = !turn;
-    if (!turn) autoPlay();
+    if (getValidCells().length === 0) {
+      printLog('全てのセルが埋まりました。');
+      return finish();
+    }
+    else if (!turn) autoPlay();
   }
 }
 
