@@ -36,9 +36,8 @@ const points = [
 
 let turn = null;
 let milliseconds = 100;
-let auto = false;
-let npc = false;
-let debug = false;
+let isAutoMode = false;
+let isNPCMode = false;
 
 const sleep = milliseconds => new Promise(resolve => setTimeout(() => resolve(), milliseconds));
 
@@ -52,7 +51,7 @@ const sleep = milliseconds => new Promise(resolve => setTimeout(() => resolve(),
                    '初期化処理は実行されず、ゲームは動作しません。\n' +
                    '選択しなおしますか？') ? main() : alert('選択しなおす場合は、ページを再読み込みしてください。');
   }
-  
+
   currentBoard.length = 0;
   for (let row = 0; row < 8; row ++) {
     currentBoard[row] = [];
@@ -64,21 +63,18 @@ const sleep = milliseconds => new Promise(resolve => setTimeout(() => resolve(),
       currentBoard[row][column] = cell;
     }
   }
+
   currentBoard[3][3].status = true;
   currentBoard[3][4].status = false;
   currentBoard[4][3].status = false;
   currentBoard[4][4].status = true;
-  
+  currentBoard.flat().filter(({status}) => status !== null).forEach(cell => cell.className = `cell ${cell.status ? 'black' : 'white'}`);
+
   turn = true;
-  
+
   automode.addEventListener('change', onChange, false);
   npcmode.addEventListener('change', onChange, false);
   interval.addEventListener('change', onChange, false);
-  
-  const array = currentBoard.flat();
-  array.filter(({status}) => status !== null).forEach(cell => cell.className = `cell ${cell.status ? 'black' : 'white'}`);
-  
-  if (debug) array.forEach(cell => cell.textContent = points[cell.rowIndex][cell.columnIndex]);
 })();
 
 function createCell (rowIndex, columnIndex) {
@@ -86,57 +82,53 @@ function createCell (rowIndex, columnIndex) {
   div.style.gridRow = rowIndex + 1;
   div.style.gridColumn = columnIndex + 1;
   div.className = 'item';
-  
+
   const cell = document.createElement('div');
   cell.className = 'cell';
   cell.rowIndex = rowIndex;
   cell.columnIndex = columnIndex;
   cell.addEventListener('click', onClick, false);
-  
+
   div.appendChild(cell);
-  
+
   return {cell, div};
 }
 
 function onClick (event) {
   const {rowIndex, columnIndex} = this;
-  
+
+  // そのセルが置けるセルなのか判定
   const cell = currentBoard[rowIndex][columnIndex];
   if (cell.status !== null) return;
 
+  // そのセルで得られるセルの個数を判定
   const cells = getObtainableCells(rowIndex, columnIndex);
   if (cells.length === 0) return;
 
+  // 得られるセル全ての色をターンに応じて変更する
   cells.push(cell);
   cells.forEach(cell => {
     cell.className = `cell ${turn ? 'black' : 'white'}`;
     cell.status = cell.status === null ? turn : !cell.status;
   });
-  
-  const array = currentBoard.flat();
-  if (debug) {
-    array.forEach(cell => cell.textContent = points[cell.rowIndex][cell.columnIndex]);
-    getValidCells().forEach(({cell, point}) => cell.textContent = point);
-  }
-  
+
+  // パターンを保存する
   pattern.push([rowIndex, columnIndex]);
 
-  if (array.find(({status}) => status === null) === undefined) {
+  // 全てのセルが配置済みか判定
+  if (currentBoard.flat().find(({status}) => status === null) === undefined) {
     printLog('全てのセルが埋まりました。');
     return finish();
   }
 
+  // 相手にターンを渡す
   turn = !turn;
-  
-  // 自分のターンであり、取れるセルが0個の場合は相手にターンを渡す
-  if (auto || (npc && !turn)) autoPlay();
+
+  // オートモードまたはNPCモードの相手ターンの場合、自動で次のターンを実行する
+  if (isAutoMode || isNPCMode && !turn) autoPlay();
+  // NPCモードの自分のターンまたはPvPモードの場合、置けるセルが無ければターンを相手に渡して
   else if (getValidCells().length === 0) {
     turn = !turn;
-    if (getValidCells().length === 0) {
-      printLog('全てのセルが埋まりました。');
-      return finish();
-    }
-    else if (!turn) autoPlay();
   }
 }
 
@@ -145,9 +137,9 @@ function onChange (event) {
     case automode:
     case npcmode:
     case pvpmode:
-      auto = this === automode;
-      npc = this === npcmode;
-      if (auto) autoPlay();
+      isAutoMode = this === automode;
+      isNPCMode = this === npcmode;
+      if (isAutoMode) autoPlay();
       break;
     case interval:
       milliseconds = parseInt(interval.value);
@@ -159,7 +151,8 @@ function getObtainableCells (row, column) {
   const cells = [];
   for (let x = -1; x <= 1; x ++) {
     for (let y = -1; y <= 1; y ++) {
-      if (x !== 0 || y !== 0) cells.push(...search(row, column, x, y));
+      if (x === 0 && y === 0) continue;
+      cells.push(...search(row, column, x, y));
     }
   }
   return cells;
@@ -205,9 +198,10 @@ function finish () {
   const white = array.filter(({status}) => !status).length;
   printLog(`黒: ${black}
 白: ${white}`);
-  
-  if (auto) return;
-  
+
+  // オートモードではデータを収集しない
+  if (isAutoMode) return;
+
   push(ref(database, 'othello-logger'), {
     pattern,
     result: {black, white},
@@ -225,10 +219,10 @@ async function autoPlay () {
     printLog(`${turn ? '黒' : '白'}の置けるセルがありません。
 ${turn ? '白' : '黒'}にターンを渡します。`);
     turn = !turn;
-    
+
     // NPC/PvPモードはここで終了
-    if (!auto) return;
-    
+    if (!isAutoMode) return;
+
     // プレイヤーBの置けるセルの数を取得
     validCells = getValidCells();
 
@@ -239,7 +233,6 @@ ${turn ? '白' : '黒'}にターンを渡します。`);
       return finish();
     }
   }
-  // プレイヤーAまたはBの置けるセルの中で、最も得点の得られるセルをクリックする
   validCells.sort((a, b) => b.point - a.point)[0].cell.click();
 }
 
