@@ -61,6 +61,7 @@ let turn = null;
 let milliseconds = 100;
 let isAutoMode = false;
 let isNPCMode = false;
+let isReverseMode = OPPONENT_TURN_STATUS;
 
 (function main () {
   if (!confirm('このゲームでは、ゲームの終了時に以下の情報をサーバーへアップロードします。',
@@ -85,8 +86,8 @@ async function autoPlay () {
   let validCells = getValidCells();
   // プレイヤーAの置けるセルが0の場合はターンをプレイヤーBに渡す
   if (validCells.length === 0) {
-    printLog(`${turnIsProponent() ? '黒' : '白'}の置けるセルがありません。`,
-             `${turnIsProponent() ? '白' : '黒'}にターンを渡します。`);
+    printLog(`${turn ? '黒' : '白'}の置けるセルがありません。`,
+             `${turn ? '白' : '黒'}にターンを渡します。`);
     inverseTurn();
     // NPC/PvPモードはここで終了
     if (!isAutoMode) return;
@@ -117,8 +118,8 @@ function createCell (rowIndex, columnIndex) {
 
 function finish () {
   const cells = CURRENT_BOARD.flat();
-  const black = cells.filter(statusIsProponent).length;
-  const white = cells.filter(statusIsOpponent).length;
+  const black = cells.filter(cell => cell.status === turn).length;
+  const white = cells.filter(cell => cell.status !== turn).length;
   printLog(`黒: ${black}`, `白: ${white}`);
   // オートモードではデータを収集しない
   if (isAutoMode) return;
@@ -147,7 +148,7 @@ function getValidCells () {
     point = cell.point + obtainableCells.reduce((sum, {point}) => sum + point, 0);
     if (obtainableCells.length > 0) cells.push({point, cell});
   });
-  return cells.filter(({cell}) => statusIsNull(cell));
+  return cells.filter(({cell}) => cell.status === null);
 }
 
 function initBoard () {
@@ -162,18 +163,18 @@ function initBoard () {
       CURRENT_BOARD[row][column] = cell;
     }
   }
-  CURRENT_BOARD[3][3].status = true;
-  CURRENT_BOARD[3][4].status = false;
-  CURRENT_BOARD[4][3].status = false;
-  CURRENT_BOARD[4][4].status = true;
-  CURRENT_BOARD.flat().filter(statusIsNotNull).forEach(cell => cell.className = `cell ${statusIsProponent(cell) ? 'black' : 'white'}`);
+  CURRENT_BOARD[3][3].status = turn;
+  CURRENT_BOARD[3][4].status = !turn;
+  CURRENT_BOARD[4][3].status = !turn;
+  CURRENT_BOARD[4][4].status = turn;
+  CURRENT_BOARD.flat().filter(cell => cell.status !== null).forEach(cell => cell.className = `cell ${turn ? 'black' : 'white'}`);
 }
 
 function onClick (event) {
   const {rowIndex, columnIndex} = this;
   // そのセルが置けるセルなのか判定
   const cell = CURRENT_BOARD[rowIndex][columnIndex];
-  if (!statusIsNull(cell)) return;
+  if (cell.status !== null) return;
   // そのセルで得られるセルの個数を判定
   const cells = getObtainableCells(rowIndex, columnIndex);
   if (cells.length === 0) return;
@@ -181,23 +182,23 @@ function onClick (event) {
   cells.push(cell);
   cells.forEach(cell => {
     cell.className = `cell ${turn ? 'black' : 'white'}`;
-    cell.status = statusIsNull(cell) ? turn : !cell.status;
+    cell.status = cell.status === null ? turn : !cell.status;
   });
   // パターンを保存する
   PATTERN.push([rowIndex, columnIndex]);
   // 全てのセルが配置済みか判定
-  if (!CURRENT_BOARD.flat().find(statusIsNull)) {
+  if (!CURRENT_BOARD.flat().find(cell => cell.status === null)) {
     return printLog('全てのセルが埋まりました。') || finish();
   }
   // 相手にターンを渡す
   inverseTurn();
   // オートモードまたはNPCモードの相手ターンの場合、自動で次のターンを実行する
-  if (isAutoMode || isNPCMode && turnIsOpponent()) autoPlay();
+  if (isAutoMode || isNPCMode && turn === isReverseMode) autoPlay();
   // NPCモードの自分のターンまたはPvPモードの場合、置けるセルが無ければターンを相手に渡す
   else if (getValidCells().length === 0) {
     inverseTurn();
     // NPCモードの相手ターンの場合、自動で次のターンを実行する
-    if (isNPCMode && turnIsOpponent()) autoPlay();
+    if (isNPCMode && turn === isReverseMode) autoPlay();
   }
 }
 
@@ -208,7 +209,7 @@ function onChange (event) {
     case pvpmode:
       isAutoMode = this === automode;
       isNPCMode = this === npcmode;
-      if (isAutoMode || isNPCMode && turnIsOpponent()) autoPlay();
+      if (isAutoMode || isNPCMode && turn === isReverseMode) autoPlay();
       break;
     case interval:
       milliseconds = parseInt(interval.value);
@@ -233,10 +234,10 @@ function search (row, column, dx, dy) {
     switch (cell.status) {
       case null:
         break loop;
-      case turn:
+      case turn !== isReverseMode:
         flag = true;
         break loop;
-      case !turn:
+      case turn === isReverseMode:
         cells.push(cell);
         break;
     }
