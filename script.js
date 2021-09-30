@@ -51,6 +51,7 @@ const PATTERN = [];
 const inverseTurn = () => turn = !turn;
 const sleep = milliseconds => new Promise(resolve => setTimeout(() => resolve(), milliseconds));
 const statusIsNull = ({status}) => status === null;
+const statusIsNotNull = ({status}) => status !== null;
 const statusIsOpponent = ({status}) => status === OPPONENT_TURN_STATUS;
 const statusIsProponent = ({status}) => status === PROPONENT_TURN_STATUS;
 const turnIsOpponent = () => turn === OPPONENT_TURN_STATUS;
@@ -165,7 +166,7 @@ function initBoard () {
   CURRENT_BOARD[3][4].status = false;
   CURRENT_BOARD[4][3].status = false;
   CURRENT_BOARD[4][4].status = true;
-  CURRENT_BOARD.flat().filter(statusIsNull).forEach(cell => cell.className = `cell ${statusIsProponent(cell) ? 'black' : 'white'}`);
+  CURRENT_BOARD.flat().filter(statusIsNotNull).forEach(cell => cell.className = `cell ${statusIsProponent(cell) ? 'black' : 'white'}`);
 }
 
 function onClick (event) {
