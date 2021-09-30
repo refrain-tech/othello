@@ -158,7 +158,10 @@ function initBoard () {
   CURRENT_BOARD[3][4].status = !turn;
   CURRENT_BOARD[4][3].status = !turn;
   CURRENT_BOARD[4][4].status = turn;
-  CURRENT_BOARD.flat().filter(cell => cell.status !== null).forEach(cell => cell.className = `cell ${turn === isReverseMode ? 'black' : 'white'}`);
+  CURRENT_BOARD.flat().filter(cell => cell.status !== null).forEach(cell => {
+    console.log(cell);
+    cell.className = `cell ${turn ? 'black' : 'white'}`;
+  });
 }
 
 function onClick (event) {
