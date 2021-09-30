@@ -147,7 +147,7 @@ function getValidCells () {
     point = cell.point + obtainableCells.reduce((sum, {point}) => sum + point, 0);
     if (obtainableCells.length > 0) cells.push({point, cell});
   });
-  return cells.filter(({cell: {status}}) => status === null);
+  return cells.filter(({cell}) => statusIsNull(cell));
 }
 
 function initBoard () {
@@ -181,7 +181,7 @@ function onClick (event) {
   cells.push(cell);
   cells.forEach(cell => {
     cell.className = `cell ${turn ? 'black' : 'white'}`;
-    cell.status = statusIsNull(cell) ? turnIsProponent() : !cell.status;
+    cell.status = statusIsNull(cell) ? turn : !cell.status;
   });
   // パターンを保存する
   PATTERN.push([rowIndex, columnIndex]);
