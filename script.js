@@ -12,7 +12,6 @@ initializeApp({
   projectId: 'othello-logger',
   storageBucket: 'othello-logger.appspot.com'
 });
-
 const database = getDatabase();
 
 const automode = document.querySelector('#automode');
@@ -21,9 +20,10 @@ const interval = document.querySelector('#interval');
 const board = document.querySelector('#board');
 const log = document.querySelector('#log');
 
-const currentBoard = [];
-const pattern = [];
-const points = [
+const OPPONENT_TURN_STATUS = location.search.includes('reverse'); // false;
+const PROPONENT_TURN_STATUS = !location.search.includes('reverse'); // true;
+
+const CELL_POINTS = [
   [ 30, -12,  0, -1, -1,  0, -12,  30],
   [-12, -15, -3, -3, -3, -3, -15, -12],
   [  0,  -3,  0, -1, -1,  0,  -3,   0],
@@ -34,7 +34,7 @@ const points = [
   [ 30, -12,  0, -1, -1,  0, -12,  30]
 ];
 /**
-const points = [
+[
   [100, -40, 20,  5,  5, 20, -40, 100],
   [-40, -80, -1, -1, -1, -1, -80, -40],
   [ 20,  -1,  5,  1,  1,  5,  -1,  20],
@@ -43,104 +43,160 @@ const points = [
   [ 20,  -1,  5,  1,  1,  5,  -1,  20],
   [-40, -80, -1, -1, -1, -1, -80, -40],
   [100, -40, 20,  5,  5, 20, -40, 100]
-];
+]
 */
+const CURRENT_BOARD = [];
+const PATTERN = [];
+
+const inverseTurn = () => turn = !turn;
+const sleep = milliseconds => new Promise(resolve => setTimeout(() => resolve(), milliseconds));
+const statusIsNull = ({status}) => status === null;
+const statusIsOpponent = ({status}) => status === OPPONENT_TURN_STATUS;
+const statusIsProponent = ({status}) => status === PROPONENT_TURN_STATUS;
+const turnIsOpponent = () => turn === OPPONENT_TURN_STATUS;
+const turnIsProponent = () => turn === PROPONENT_TURN_STATUS;
 
 let turn = null;
 let milliseconds = 100;
 let isAutoMode = false;
 let isNPCMode = false;
 
-const sleep = milliseconds => new Promise(resolve => setTimeout(() => resolve(), milliseconds));
-
 (function main () {
-  if (!confirm('このゲームでは、ゲームの終了時に以下の情報をサーバーへアップロードします。\n' +
-               '・どちらのプレイヤーが勝利したか、又は引き分けになったか\n' +
-               '・ゲーム終了時点での、各プレイヤーのセルの数\n' +
-               '・セルがどの順序で配置されたかの履歴\n' +
+  if (!confirm('このゲームでは、ゲームの終了時に以下の情報をサーバーへアップロードします。',
+               '・ゲームの結果',
+               '・ゲーム終了時点での、各プレイヤーのセルの数',
+               '・セルがどの順序で配置されたかの履歴',
                '情報のアップロードに同意する場合は「OK」を選択してください。')) {
-    return confirm('情報のアップロードが許可されませんでした。\n' +
-                   '初期化処理は実行されず、ゲームは動作しません。\n' +
+    return confirm('情報のアップロードが許可されませんでした。',
+                   '初期化処理は実行されず、ゲームは動作しません。',
                    '選択しなおしますか？') ? main() : alert('選択しなおす場合は、ページを再読み込みしてください。');
   }
-
-  currentBoard.length = 0;
-  for (let row = 0; row < 8; row ++) {
-    currentBoard[row] = [];
-    for (let column = 0; column < 8; column ++) {
-      const {cell, div} = createCell(row, column);
-      board.appendChild(div);
-      cell.status = null;
-      cell.point = points[row][column];
-      currentBoard[row][column] = cell;
-    }
-  }
-
-  currentBoard[3][3].status = true;
-  currentBoard[3][4].status = false;
-  currentBoard[4][3].status = false;
-  currentBoard[4][4].status = true;
-  currentBoard.flat().filter(({status}) => status !== null).forEach(cell => cell.className = `cell ${cell.status ? 'black' : 'white'}`);
-
-  turn = true;
-
+  initBoard();
+  turn = PROPONENT_TURN_STATUS;
   automode.addEventListener('change', onChange, false);
   npcmode.addEventListener('change', onChange, false);
   interval.addEventListener('change', onChange, false);
 })();
+
+async function autoPlay () {
+  // Maximum call stack size exceeded対策
+  await sleep(milliseconds);
+  let validCells = getValidCells();
+  // プレイヤーAの置けるセルが0の場合はターンをプレイヤーBに渡す
+  if (validCells.length === 0) {
+    printLog(`${turnIsProponent() ? '黒' : '白'}の置けるセルがありません。`,
+             `${turnIsProponent() ? '白' : '黒'}にターンを渡します。`);
+    inverseTurn();
+    // NPC/PvPモードはここで終了
+    if (!isAutoMode) return;
+    // プレイヤーBの置けるセルの数を取得
+    validCells = getValidCells();
+    // プレイヤーBの置けるセルが0の場合は終了する
+    if (validCells.length === 0) {
+      return printLog('置けるセルがありません。',
+                      'ゲームを終了します。') || finish();
+    }
+  }
+  validCells.sort((a, b) => b.point - a.point)[0].cell.click();
+}
 
 function createCell (rowIndex, columnIndex) {
   const div = document.createElement('div');
   div.style.gridRow = rowIndex + 1;
   div.style.gridColumn = columnIndex + 1;
   div.className = 'item';
-
   const cell = document.createElement('div');
   cell.className = 'cell';
   cell.rowIndex = rowIndex;
   cell.columnIndex = columnIndex;
   cell.addEventListener('click', onClick, false);
-
   div.appendChild(cell);
-
   return {cell, div};
+}
+
+function finish () {
+  const cells = CURRENT_BOARD.flat();
+  const black = cells.filter(statusIsProponent).length;
+  const white = cells.filter(statusIsOpponent).length;
+  printLog(`黒: ${black}`, `白: ${white}`);
+  // オートモードではデータを収集しない
+  if (isAutoMode) return;
+  const pattern = PATTERN.map(p => p.join('-')).join('>');
+  const result = {black, white};
+  const winner = black === white ? 'draw' : black > white ? 'black' : 'white';
+  push(ref(database, 'othello-logger'), {pattern, result, winner});
+}
+
+function getObtainableCells (row, column) {
+  const cells = [];
+  for (let x = -1; x <= 1; x ++) {
+    for (let y = -1; y <= 1; y ++) {
+      if (x === 0 && y === 0) continue;
+      cells.push(...search(row, column, x, y));
+    }
+  }
+  return cells;
+}
+
+function getValidCells () {
+  const cells = [];
+  let obtainableCells, point;
+  CURRENT_BOARD.flat().forEach((cell, index) => {
+    obtainableCells = getObtainableCells(~~(index / 8), index % 8);
+    point = cell.point + obtainableCells.reduce((sum, {point}) => sum + point, 0);
+    if (obtainableCells.length > 0) cells.push({point, cell});
+  });
+  return cells.filter(({cell: {status}}) => status === null);
+}
+
+function initBoard () {
+  CURRENT_BOARD.length = 0;
+  for (let row = 0; row < 8; row ++) {
+    CURRENT_BOARD[row] = [];
+    for (let column = 0; column < 8; column ++) {
+      const {cell, div} = createCell(row, column);
+      board.appendChild(div);
+      cell.status = null;
+      cell.point = CELL_POINTS[row][column];
+      CURRENT_BOARD[row][column] = cell;
+    }
+  }
+  CURRENT_BOARD[3][3].status = true;
+  CURRENT_BOARD[3][4].status = false;
+  CURRENT_BOARD[4][3].status = false;
+  CURRENT_BOARD[4][4].status = true;
+  CURRENT_BOARD.flat().filter(statusIsNull).forEach(cell => cell.className = `cell ${statusIsProponent(cell) ? 'black' : 'white'}`);
 }
 
 function onClick (event) {
   const {rowIndex, columnIndex} = this;
-
   // そのセルが置けるセルなのか判定
-  const cell = currentBoard[rowIndex][columnIndex];
-  if (cell.status !== null) return;
-
+  const cell = CURRENT_BOARD[rowIndex][columnIndex];
+  if (!statusIsNull(cell)) {return;
   // そのセルで得られるセルの個数を判定
   const cells = getObtainableCells(rowIndex, columnIndex);
   if (cells.length === 0) return;
-
   // 得られるセル全ての色をターンに応じて変更する
   cells.push(cell);
   cells.forEach(cell => {
-    cell.className = `cell ${turn ? 'black' : 'white'}`;
-    cell.status = cell.status === null ? turn : !cell.status;
+    cell.className = `cell ${turnIsProponent() ? 'black' : 'white'}`;
+    cell.status = statusIsNull(cell) ? turnIsProponent() : !cell.status;
   });
-
   // パターンを保存する
-  pattern.push([rowIndex, columnIndex]);
-
+  PATTERN.push([rowIndex, columnIndex]);
   // 全てのセルが配置済みか判定
-  if (currentBoard.flat().find(({status}) => status === null) === undefined) {
-    printLog('全てのセルが埋まりました。');
-    return finish();
+  if (!CURRENT_BOARD.flat().find(statusIsNull)) {
+    return printLog('全てのセルが埋まりました。') || finish();
   }
-
   // 相手にターンを渡す
-  turn = !turn;
-
+  inverseTurn();
   // オートモードまたはNPCモードの相手ターンの場合、自動で次のターンを実行する
-  if (isAutoMode || isNPCMode && !turn) autoPlay();
-  // NPCモードの自分のターンまたはPvPモードの場合、置けるセルが無ければターンを相手に渡して
+  if (isAutoMode || isNPCMode && !turnIsProponent()) autoPlay();
+  // NPCモードの自分のターンまたはPvPモードの場合、置けるセルが無ければターンを相手に渡す
   else if (getValidCells().length === 0) {
-    turn = !turn;
+    inverseTurn();
+    // NPCモードの相手ターンの場合、自動で次のターンを実行する
+    if (isNPCMode && !turnIsProponent()) autoPlay();
   }
 }
 
@@ -159,103 +215,30 @@ function onChange (event) {
   }
 }
 
-function getObtainableCells (row, column) {
-  const cells = [];
-  for (let x = -1; x <= 1; x ++) {
-    for (let y = -1; y <= 1; y ++) {
-      if (x === 0 && y === 0) continue;
-      cells.push(...search(row, column, x, y));
-    }
-  }
-  return cells;
-}
-
-function search (row, column, dx, dy) {
-  let flag = false, cell;
-  const cells = [];
-
-  loop: while (true) {
-    row += dx;
-    column += dy;
-
-    if (row < 0 || row > 7 || column < 0 || column > 7) break;
-
-    cell = currentBoard[row][column];
-    switch (cell.status) {
-      case null:
-        break loop;
-      case turn:
-        flag = true;
-        break loop;
-      case !turn:
-        cells.push(cell);
-        break;
-      default:
-        break;
-    }
-  }
-
-  return flag ? cells : [];
-}
-
-function printLog (message) {
+function printLog (...messages) {
   const li = document.createElement('li');
-  li.innerHTML = message.replace('\n', '<br />');
+  li.innerHTML = messages.join('<br />');
   log.appendChild(li);
 }
 
-function finish () {
-  const array = currentBoard.flat();
-  const black = array.filter(({status}) => status).length;
-  const white = array.filter(({status}) => !status).length;
-  printLog(`黒: ${black}
-白: ${white}`);
-
-  // オートモードではデータを収集しない
-  if (isAutoMode) return;
-
-  push(ref(database, 'othello-logger'), {
-    pattern,
-    result: {black, white},
-    winner: black === white ? 'draw' : black > white ? 'black' : 'white'
-  });
-}
-
-async function autoPlay () {
-  // Maximum call stack size exceeded対策
-  await sleep(milliseconds);
-
-  let validCells = getValidCells();
-  // プレイヤーAの置けるセルが0の場合はターンをプレイヤーBに渡す
-  if (validCells.length === 0) {
-    printLog(`${turn ? '黒' : '白'}の置けるセルがありません。
-${turn ? '白' : '黒'}にターンを渡します。`);
-    turn = !turn;
-
-    // NPC/PvPモードはここで終了
-    if (!isAutoMode) return;
-
-    // プレイヤーBの置けるセルの数を取得
-    validCells = getValidCells();
-
-    // プレイヤーBの置けるセルが0の場合は終了する
-    if (validCells.length === 0) {
-      printLog(`置けるセルがありません。
-ゲームを終了します。`);
-      return finish();
+function search (row, column, dx, dy) {
+  const cells = [];
+  let flag = false, cell;
+  loop: while (true) {
+    row += dx;
+    column += dy;
+    if (row < 0 || row > 7 || column < 0 || column > 7) break;
+    cell = CURRENT_BOARD[row][column];
+    switch (cell.status) {
+      case null:
+        break loop;
+      case PROPONENT_TURN_STATUS:
+        flag = true;
+        break loop;
+      case OPPONENT_TURN_STATUS:
+        cells.push(cell);
+        break;
     }
   }
-  validCells.sort((a, b) => b.point - a.point)[0].cell.click();
-}
-
-function getValidCells () {
-  const cells = [];
-  let obtainableCells, point;
-  currentBoard.flat().forEach((cell, index) => {
-    obtainableCells = getObtainableCells(~~(index / 8), index % 8);
-    point = cell.point + obtainableCells.reduce((accumulator, {point}) => accumulator + point, 0);
-    if (obtainableCells.length > 0) cells.push({point, cell});
-  });
-
-  return cells.filter(({cell: {status}}) => status === null);
+  return flag ? cells : [];
 }
