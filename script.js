@@ -233,10 +233,10 @@ function search (row, column, dx, dy) {
     switch (cell.status) {
       case null:
         break loop;
-      case PROPONENT_TURN_STATUS:
+      case turn:
         flag = true;
         break loop;
-      case OPPONENT_TURN_STATUS:
+      case !turn:
         cells.push(cell);
         break;
     }
