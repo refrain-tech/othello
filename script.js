@@ -180,7 +180,7 @@ function onClick (event) {
   // 得られるセル全ての色をターンに応じて変更する
   cells.push(cell);
   cells.forEach(cell => {
-    cell.className = `cell ${turnIsProponent() ? 'black' : 'white'}`;
+    cell.className = `cell ${turn ? 'black' : 'white'}`;
     cell.status = statusIsNull(cell) ? turnIsProponent() : !cell.status;
   });
   // パターンを保存する
