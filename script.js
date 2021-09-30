@@ -172,7 +172,7 @@ function onClick (event) {
   const {rowIndex, columnIndex} = this;
   // そのセルが置けるセルなのか判定
   const cell = CURRENT_BOARD[rowIndex][columnIndex];
-  if (!statusIsNull(cell)) {return;
+  if (!statusIsNull(cell)) return;
   // そのセルで得られるセルの個数を判定
   const cells = getObtainableCells(rowIndex, columnIndex);
   if (cells.length === 0) return;
