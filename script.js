@@ -20,8 +20,10 @@ const interval = document.querySelector('#interval');
 const board = document.querySelector('#board');
 const log = document.querySelector('#log');
 
-const OPPONENT_TURN_STATUS = location.search.includes('reverse'); // false;
-const PROPONENT_TURN_STATUS = !location.search.includes('reverse'); // true;
+const OPPONENT_TURN_STATUS = false; // false;
+const PROPONENT_TURN_STATUS = true; // !location.search.includes('reverse') // true;
+console.log('OPPONENT', OPPONENT_TURN_STATUS);
+console.log('PROPONENT', PROPONENT_TURN_STATUS);
 
 const CELL_POINTS = [
   [ 30, -12,  0, -1, -1,  0, -12,  30],
@@ -73,7 +75,7 @@ let isNPCMode = false;
                    '選択しなおしますか？') ? main() : alert('選択しなおす場合は、ページを再読み込みしてください。');
   }
   initBoard();
-  turn = PROPONENT_TURN_STATUS;
+  turn = !location.search.includes('reverse');
   automode.addEventListener('change', onChange, false);
   npcmode.addEventListener('change', onChange, false);
   interval.addEventListener('change', onChange, false);
@@ -208,6 +210,9 @@ function onChange (event) {
     case pvpmode:
       isAutoMode = this === automode;
       isNPCMode = this === npcmode;
+      console.log('isAutoMode', isAutoMode);
+      console.log('isNPCMode', isNPCMode);
+      console.log('turnIsProponent', turnIsProponent());
       if (isAutoMode || isNPCMode && turnIsOpponent()) autoPlay();
       break;
     case interval:
