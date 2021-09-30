@@ -20,9 +20,6 @@ const interval = document.querySelector('#interval');
 const board = document.querySelector('#board');
 const log = document.querySelector('#log');
 
-const OPPONENT_TURN_STATUS = location.search.includes('reverse');
-const PROPONENT_TURN_STATUS = !OPPONENT_TURN_STATUS;
-
 const CELL_POINTS = [
   [ 30, -12,  0, -1, -1,  0, -12,  30],
   [-12, -15, -3, -3, -3, -3, -15, -12],
@@ -50,18 +47,12 @@ const PATTERN = [];
 
 const inverseTurn = () => turn = !turn;
 const sleep = milliseconds => new Promise(resolve => setTimeout(() => resolve(), milliseconds));
-const statusIsNull = ({status}) => status === null;
-const statusIsNotNull = ({status}) => status !== null;
-const statusIsOpponent = ({status}) => status === OPPONENT_TURN_STATUS;
-const statusIsProponent = ({status}) => status === PROPONENT_TURN_STATUS;
-const turnIsOpponent = () => turn === OPPONENT_TURN_STATUS;
-const turnIsProponent = () => turn === PROPONENT_TURN_STATUS;
 
 let turn = null;
 let milliseconds = 100;
 let isAutoMode = false;
 let isNPCMode = false;
-let isReverseMode = OPPONENT_TURN_STATUS;
+let isReverseMode = location.search.includes('reverse');
 
 (function main () {
   if (!confirm('このゲームでは、ゲームの終了時に以下の情報をサーバーへアップロードします。',
@@ -167,7 +158,7 @@ function initBoard () {
   CURRENT_BOARD[3][4].status = !turn;
   CURRENT_BOARD[4][3].status = !turn;
   CURRENT_BOARD[4][4].status = turn;
-  CURRENT_BOARD.flat().filter(cell => cell.status !== null).forEach(cell => cell.className = `cell ${turn ? 'black' : 'white'}`);
+  CURRENT_BOARD.flat().filter(cell => cell.status !== null).forEach(cell => cell.className = `cell ${turn === isReverseMode ? 'black' : 'white'}`);
 }
 
 function onClick (event) {
