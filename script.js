@@ -194,12 +194,12 @@ function onClick (event) {
   // 相手にターンを渡す
   inverseTurn();
   // オートモードまたはNPCモードの相手ターンの場合、自動で次のターンを実行する
-  if (isAutoMode || isNPCMode && !turnIsOpponent()) autoPlay();
+  if (isAutoMode || isNPCMode && turnIsOpponent()) autoPlay();
   // NPCモードの自分のターンまたはPvPモードの場合、置けるセルが無ければターンを相手に渡す
   else if (getValidCells().length === 0) {
     inverseTurn();
     // NPCモードの相手ターンの場合、自動で次のターンを実行する
-    if (isNPCMode && !turnIsOpponent()) autoPlay();
+    if (isNPCMode && turnIsOpponent()) autoPlay();
   }
 }
 
